@@ -23,6 +23,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -36,6 +37,7 @@ import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -45,6 +47,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -217,11 +220,26 @@ public class MainActivity extends AppCompatActivity {
             } else if(resultCode == RESULT_CANCELED) {
                 Toast.makeText(this, "Sign in cancelled", Toast.LENGTH_SHORT).show();
                 finish();
-            } else if (requestCode == RC_PHOTO_PICKER && resultCode == RESULT_OK) {
-                Uri selectedImageUrl = data.getData();
-                StorageReference photoRef =
-                        mChatPhotosStorageReference.child(selectedImageUrl.getLastPathSegment());
             }
+        }
+        else if (requestCode == RC_PHOTO_PICKER && resultCode == RESULT_OK) {
+            Log.v("hata", "hayyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+            Uri selectedImageUrl = data.getData();
+
+            //Get a reference to store file at chat_photos/<FILENAME>
+            StorageReference photoRef =
+                    mChatPhotosStorageReference.child(selectedImageUrl.getLastPathSegment());
+
+            //Upload file to Firebase Storage
+            photoRef.putFile(selectedImageUrl).addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    Uri dowloadUrl = taskSnapshot.getDownloadUrl();
+                    FriendlyMessage deneme =
+                            new FriendlyMessage(null, mUsername, dowloadUrl.toString());
+                    mMessagesDatabaseReference.push().setValue(deneme);
+                }
+            });
         }
     }
 
